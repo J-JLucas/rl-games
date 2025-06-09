@@ -8,50 +8,55 @@ class GameTTT:
         self.game_over = False
         self.move = 0
 
+
     def play(self):
         self.reset()
         while not self.game_over and self.move < 9:
             self.render_board()
-            self.take_turn()
-            self.check_winner()
-            self.current_player = (self.current_player + 1) % 2
+            row, col = self.get_player_input()
+            self.take_turn(row, col)
             
         self.render_board()
         if self.winner == -1:
             print("It's a draw!")
         else:
             print("Player", 'X' if self.winner == 0 else 'O', "wins!")
-   
-    def take_turn(self):
-        valid = False
-        if self.current_player == 0:
-            print("Player X's turn")
-            player_value = -1
-        else:
-            print("Player O's turn")
-            player_value = 1
-        print("Enter your move (row col) eg: (2 1) ")
 
-        while(not valid):
-            move = input().split()
-            if (len(move) != 2 or move[0] not in '012' or move[1] not in '012'):
-                print("invalid input")
-                continue
-            elif (self.board[int(move[0]), int(move[1])] != 0):
-                print("cell occupied")
-                continue
-            else:
-                self.board[int(move[0]), int(move[1])] = player_value
-                valid = True
-                self.move += 1
 
-    def reset(self):
-        self.board.fill(0)
-        self.current_player = 0  # X's go first
-        self.winner = -1
-        self.game_over= False
-        self.move = 0
-       
+    def get_player_input(self):
+        while True:
+            try:
+                move = input("Enter your move (row col): ").split()
+                if len(move) != 2:
+                    print("Invalid format.")
+                    continue
+                row, col = map(int, move)
+                if row not in range(3) or col not in range(3):
+                    print("Invalid coordinates.")
+                    continue
+                return row, col
+            except ValueError:
+                print("Invalid input.")
+
+  
+    def take_turn(self, row, col):
+        player_value = -1 if self.current_player == 0 else 1
+        if self.board[row, col] != 0:
+            print("Cell occupied. Try again.")
+            return False
+            
+        self.board[row, col] = player_value
+        self.move += 1
+        player_won = self.check_winner()
+        if player_won:
+            self.winner = self.current_player
+            self.game_over = True
+            return True
+        
+        self.current_player = 1 - self.current_player # flip-flop w/o mod 
+        return True
+
+      
     def check_winner(self):
         target_score = self.board.shape[0]
         lines = []
@@ -61,14 +66,20 @@ class GameTTT:
         lines.append(np.trace(self.board))
         lines.append(np.trace(np.fliplr(self.board)))
 
-        # x's negative, o's positive
-        if -target_score in lines:
-            self.winner = 0
-            self.game_over = True
-        elif target_score in lines:
-            self.winner = 1
-            self.game_over = True
+        if target_score in lines or -target_score in lines:
+            return True
 
+        return False
+
+
+    def reset(self):
+        self.board.fill(0)
+        self.current_player = 0  # X's go first
+        self.winner = -1
+        self.game_over = False
+        self.move = 0
+
+ 
     def render_board(self):
         symbols = {-1: 'x', 0: ' ', 1: 'o'}
         print("\n    0   1   2")
